@@ -1,0 +1,26 @@
+# Site Settings
+title: Koffee and Kode
+description: A blog about code, tech, and everything in between
+url: https://gautham-surakanti.github.io
+baseurl: /koffee-and-kode
+
+# Author
+author:
+  name: Gautham Surakanti
+
+# Build settings
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+
