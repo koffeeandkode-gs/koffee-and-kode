@@ -1,0 +1,25 @@
+---
+layout: default
+---
+<div class="posts-page">
+  <h1 class="page-title">All Posts</h1>
+  
+  <ul class="post-list">
+    {% for post in site.posts %}
+    <li class="post-item">
+      <span class="post-meta">{{ post.date | date: "%b %d, %Y" }}</span>
+      <h3>
+        <a class="post-link" href="{{ post.url | relative_url }}">{{ post.title }}</a>
+      </h3>
+      {% if post.categories %}
+      <span class="post-categories">
+        {% for category in post.categories %}
+        <span class="category-tag">{{ category }}</span>
+        {% endfor %}
+      </span>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+

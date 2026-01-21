@@ -9,7 +9,6 @@ author:
   name: Gautham Surakanti
 
 # Build settings
-theme: minima
 plugins:
   - jekyll-feed
   - jekyll-sitemap

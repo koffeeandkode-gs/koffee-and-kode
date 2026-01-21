@@ -1,0 +1,31 @@
+---
+layout: default
+---
+<div class="home">
+  <div class="home-intro">
+    <h1 class="home-title">{{ site.title }}</h1>
+    <p class="home-description">{{ site.description }}</p>
+  </div>
+
+  <div class="posts-section">
+    <h2 class="section-title">Recent Posts</h2>
+    <ul class="post-list">
+      {% for post in site.posts limit: 5 %}
+      <li class="post-item">
+        <span class="post-meta">{{ post.date | date: "%b %d, %Y" }}</span>
+        <h3>
+          <a class="post-link" href="{{ post.url | relative_url }}">{{ post.title }}</a>
+        </h3>
+        {% if post.categories %}
+        <span class="post-categories">
+          {% for category in post.categories %}
+          <span class="category-tag">{{ category }}</span>
+          {% endfor %}
+        </span>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
