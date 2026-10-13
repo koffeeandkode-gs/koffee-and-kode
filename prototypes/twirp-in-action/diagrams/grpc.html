@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is gRPC doing here?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1e1e1e; --paper: #fff; --blue: #1971c2;
+    --red: #e03131; --green: #2f9e44; --violet: #6741d9;
+    --chrome: 300px; /* title + subtitle + takeaway + nav + padding + gaps */
+  }
+  body {
+    box-sizing: border-box; margin: 0; padding: 28px 16px 32px;
+    background: var(--paper); color: var(--ink);
+    font-family: 'Caveat', 'Comic Sans MS', cursive;
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  h1 { margin: 0; font-size: clamp(30px, 4.5vw, 44px); line-height: 1.1; text-align: center; }
+  .sub { margin: 0; font-size: clamp(19px, 2vw, 23px); line-height: 1.2; text-align: center; }
+  figure { margin: 6px 0 0; width: min(100%, 1200px, calc((100dvh - var(--chrome)) * 12 / 7)); }
+  svg { display: block; width: 100%; height: auto; }
+  .takeaway { margin: 0; max-width: 1000px; font: 18px/1.35 system-ui, sans-serif; text-align: center; }
+  .steps { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .steps a { color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; padding: 3px 9px; font-size: 19px; text-decoration: none; }
+  .steps a[aria-current="page"] { background: #ffec99; }
+  .steps a:hover, .steps a:focus-visible, .glossary summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  .art { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+  text { fill: var(--ink); font-family: inherit; }
+  .t-box { font-size: 27px; font-weight: 700; }
+  .t-detail { font-size: 23px; }
+  .t-small { font-size: 21px; }
+  .t-lab { font-size: 22px; fill: #4a4a4a; }
+  .glossary { position: fixed; top: 16px; right: 16px; z-index: 10; max-width: calc(100vw - 32px); font: 14px/1.45 system-ui, sans-serif; }
+  .glossary[open] { width: 320px; }
+  .glossary summary { display: block; width: max-content; margin-left: auto; padding: 9px 13px; border: 2px solid var(--ink); border-radius: 8px; background: #ffec99; color: var(--ink); cursor: pointer; font-weight: 700; list-style: none; }
+  .glossary summary::-webkit-details-marker { display: none; }
+  .glossary summary::after { content: ' ▾'; }
+  .glossary[open] summary::after { content: ' ×'; }
+  .glossary aside { box-sizing: border-box; margin-top: 6px; max-height: calc(100dvh - 85px); overflow: auto; padding: 14px 18px; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper); color: var(--ink); box-shadow: 5px 5px 0 #d0bfff; }
+  .glossary h2 { margin: 0 0 8px; font-size: 18px; }
+  .glossary dl { margin: 0; }
+  .glossary dt { margin-top: 11px; font-weight: 700; }
+  .glossary dd { margin: 2px 0 0; }
+  .glossary a { color: var(--blue); }
+  @media (max-width: 900px) { figure { width: 100%; } }
+  @media (max-width: 700px) { body { padding-top: 72px; } .takeaway { font-size: 15px; } }
+  @media (prefers-color-scheme: dark) {
+    body { background: #121212; color: #e9ecef; }
+    figure { filter: invert(93%) hue-rotate(180deg); }
+    .steps a { color: #e9ecef; border-color: #e9ecef; }
+    .steps a[aria-current="page"] { color: var(--ink); }
+    .glossary aside { background: #202124; color: #e9ecef; border-color: #e9ecef; box-shadow: 5px 5px 0 #6741d9; }
+    .glossary a { color: #74c0fc; }
+  }
+</style>
+</head>
+<body>
+
+<h1>What is gRPC doing here?</h1>
+<p class="sub">How does a generated gRPC client reach Greeter.Greet?</p>
+<details class="glossary">
+  <summary>Glossary</summary>
+  <aside aria-label="Glossary definitions">
+    <h2>Terms in this walkthrough</h2>
+    <dl>
+      <dt>Client</dt><dd>The program asking another program to do work. Here, the website backend asks Greeter.</dd>
+      <dt>Server / service</dt><dd>The program that receives the request and runs the method. Here, Greeter answers.</dd>
+      <dt>RPC</dt><dd>Remote procedure call: invoking a named method in another process over a network.</dd>
+      <dt>Encoding</dt><dd>Turning a structured value such as Name: "Ada" into bytes that can travel over a network.</dd>
+      <dt>Decoding</dt><dd>Rebuilding a structured value from the received bytes.</dd>
+      <dt>Protobuf</dt><dd>A way to define message fields and services; it also has a compact binary encoding.</dd>
+      <dt>Unary call</dt><dd>One request followed by one response.</dd>
+      <dt>Streaming</dt><dd>A call that can carry multiple messages over time.</dd>
+      <dt>Transport</dt><dd>The network rules that move the encoded messages, such as HTTP/1.1 or HTTP/2.</dd>
+      <dt>gRPC</dt><dd>An RPC framework that typically uses protobuf messages over HTTP/2 and supports streaming calls.</dd>
+      <dt>Twirp</dt><dd>An RPC framework for unary calls that uses a .proto contract and ordinary HTTP POST.</dd>
+      <dt>HTTP/1.1</dt><dd>A widely supported version of HTTP that Twirp can use.</dd>
+      <dt>HTTP/2</dt><dd>A newer version of HTTP used by gRPC; it supports multiple streams on one connection.</dd>
+    </dl>
+    <p>Sources: <a href="https://grpc.io/docs/what-is-grpc/core-concepts/">gRPC concepts</a>,
+      <a href="https://twitchtv.github.io/twirp/docs/spec_v7.html">Twirp protocol</a>,
+      <a href="https://blog.twitch.tv/en/2018/01/16/twirp-a-sweet-new-rpc-framework-for-go-5f2febbf35f/">Twitch's rationale</a>.</p>
+  </aside>
+</details>
+
+<figure>
+<svg viewBox="0 0 1200 700" role="img"
+     aria-label="A generated gRPC client sends the Ada request as a protobuf message over HTTP/2 to a generated gRPC server, which invokes Greeter.Greet.">
+  <defs>
+    <!-- The hand. Clean coordinates go in; the displacement map wobbles them,
+         twice with different seeds, so the line reads as drawn rather than
+         plotted. Hand-wobbled path data was the alternative and it is not
+         editable afterwards. -->
+    <filter id="rough" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016" numOctaves="3" seed="7" result="n1"/>
+      <feDisplacementMap in="SourceGraphic" in2="n1" scale="2.4"
+                         xChannelSelector="R" yChannelSelector="G" result="pass1"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.021" numOctaves="3" seed="23" result="n2"/>
+      <feDisplacementMap in="SourceGraphic" in2="n2" scale="3.2"
+                         xChannelSelector="R" yChannelSelector="G" result="d2"/>
+      <feOffset in="d2" dx="1.4" dy="1.1" result="o2"/>
+      <feComponentTransfer in="o2" result="pass2">
+        <feFuncA type="linear" slope="0.45"/>
+      </feComponentTransfer>
+      <feMerge><feMergeNode in="pass2"/><feMergeNode in="pass1"/></feMerge>
+    </filter>
+
+    <!-- Hachure, not flat colour: the diagonal cross-hatch is most of why an
+         Excalidraw shape reads as filled in by hand. -->
+    <pattern id="h-blue"   width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line y2="8" stroke="#a5d8ff" stroke-width="3"/></pattern>
+    <pattern id="h-red"    width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line y2="8" stroke="#ffc9c9" stroke-width="3"/></pattern>
+    <pattern id="h-green"  width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line y2="8" stroke="#b2f2bb" stroke-width="3"/></pattern>
+    <pattern id="h-violet" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line y2="8" stroke="#d0bfff" stroke-width="3"/></pattern>
+    <pattern id="h-amber"  width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line y2="8" stroke="#ffec99" stroke-width="3"/></pattern>
+
+    <!-- Everything drawn, once. Shapes only: text is placed below, outside the
+         filter, because displacing glyphs makes them look broken, not drawn. -->
+    <g id="art" class="art">
+<rect x="55" y="185" width="310" height="325" rx="8" fill="url(#h-blue)"/>
+<rect x="445" y="155" width="310" height="385" rx="8" fill="url(#h-violet)"/>
+<rect x="835" y="185" width="310" height="325" rx="8" fill="url(#h-green)"/>
+<path d="M 375 345 H 435"/><path d="M 419 337 L 435 345 L 419 353"/>
+<path d="M 765 345 H 825"/><path d="M 809 337 L 825 345 L 809 353"/>
+    </g>
+  </defs>
+
+  <use href="#art" filter="url(#rough)"/>
+<text class="t-box" x="210" y="250" text-anchor="middle">gRPC client</text>
+<text class="t-detail" x="210" y="330" text-anchor="middle">generated stub</text>
+<text class="t-detail" x="210" y="415" text-anchor="middle">Greet("Ada")</text>
+<text class="t-box" x="600" y="225" text-anchor="middle">HTTP/2</text>
+<text class="t-detail" x="600" y="295" text-anchor="middle">protobuf message</text>
+<text class="t-small" x="600" y="395" text-anchor="middle">/demo.greeter.Greeter/</text>
+<text class="t-small" x="600" y="430" text-anchor="middle">Greet</text>
+<text class="t-box" x="990" y="250" text-anchor="middle">gRPC server</text>
+<text class="t-detail" x="990" y="330" text-anchor="middle">generated interface</text>
+<text class="t-detail" x="990" y="415" text-anchor="middle">runs Greet</text>
+<text class="t-lab" x="405" y="325" text-anchor="middle">sends</text>
+<text class="t-lab" x="795" y="325" text-anchor="middle">routes</text>
+</svg>
+</figure>
+<p class="takeaway">This Greet call is unary: one request, one reply. gRPC can also stream many messages in a call.</p>
+<nav class="steps" aria-label="Walkthrough steps"><a href="01-rpc.html">1 · Client and RPC</a><a href="encoding.html">2 · Encoding</a><a href="proto-contract.html">3 · .proto contract</a><a href="grpc.html" aria-current="page">4 · gRPC</a><a href="02-choice.html">5 · Why Twirp</a><a href="03-wire.html">6 · Twirp wire</a></nav>
+
+</body>
+</html>

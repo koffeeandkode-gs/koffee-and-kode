@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package demo.greeter;
+option go_package = "github.com/gautham-surakanti/koffee-and-kode/prototypes/twirp-in-action/rpc/greeter";
+
+service Greeter {
+  rpc Greet(GreetRequest) returns (GreetResponse);
+}
+
+message GreetRequest {
+  string name = 1;
+}
+
+message GreetResponse {
+  string message = 1;
+}
